@@ -32,7 +32,7 @@ private:
     Node<T> *node;
 public:
     OwnIterator(Node<T> *p) {
-        node->value = p;
+        node = p;
     };
 
     OwnIterator(const OwnIterator &it) : node(it.node) {
