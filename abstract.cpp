@@ -1,8 +1,10 @@
 #include <iostream>
 #include <iterator>
-//надеюсь вы вы не хейтеры using namespace std;
-using namespace std;
-
+//прошу не называйте переменные BLACK и RED
+enum colors {
+    BLACK,
+    RED
+};
 template<class T>
 class Node {
 public:
@@ -12,13 +14,25 @@ public:
     Node *right;
     Node *left;
     Node *father;
-    Node(Node<T> *node = NULL):father(node){
+    colors color;
+
+    explicit Node(Node<T> *node = NULL) : father(node) {
         right = NULL;
         left = NULL;
     }
-    Node(T val,Node<T> *node = NULL):father(node),value(val){
+
+    explicit Node(T val, Node<T> *node = NULL, colors col = BLACK) : father(node), value(val),color(col) {
         right = NULL;
         left = NULL;
+    }
+    Node* brother(){
+        if(this == father->left)
+            return father->right;
+        else
+            return father->left;
+    }
+    Node* uncle(){
+        return father->brother();
     }
 };
 
@@ -57,8 +71,17 @@ public:
 
 template<class T>
 class Tree {
-private:
+protected:
     Node<T> *root;
+private:
+    void delete_tree(Node<T> *node) {
+        if (node->right != NULL)
+            delete_tree(node->right);
+        if (node->left != NULL)
+            delete_tree(node->left);
+        delete node;
+    }
+
 public:
     //в с++ можно красиво передовать переменные из нового конструктора
     // в конструктор наследуемого класса, потом чекни как
@@ -70,6 +93,11 @@ public:
         root = new Node<T>;
         root->value = val;
     }
+
+    ~Tree() {
+        delete_tree(root);
+    }
+
     // это нужно будет наследовать и реализовать в порядке убывания приоретета(по моему личному мнению)
     virtual void insert(T val) = 0;
 
@@ -86,6 +114,90 @@ public:
     virtual int empty() = 0;
 };
 
+
+template<class T>
+class RedBlackTree : public Tree<T> {
+    using Tree<T>::root;
+private:
+    int scale;
+    void balance_tree(Node<T>* node){
+        if(node->father == NULL)
+            node->color = BLACK;
+        else if(node->father.color == RED && node->uncle() != NULL){
+           if( node->uncle().color == BLACK){
+                node->father.color = BLACK;
+                node->uncle().color = BLACK;
+                node->father->father = RED;
+                balance_tree(node->father->father);
+            }
+        }
+    }
+public:
+    RedBlackTree() : Tree<T>() {
+        //roflan assembler insertion, don't fucking forget to fix it)
+        int _SCL_VLE = 0;
+        asm ("add %1, %0"
+        : "=r" (scale)
+        : "r" (_SCL_VLE),
+        "0" (_SCL_VLE) );
+    };
+
+    RedBlackTree(T val) : Tree<T>(val) {
+        scale = 1;
+    };
+
+    void insert(T val) {
+        if (scale == 0)
+            root->value = val;
+        else {
+            Node<T> *p;
+            Node<T> *father;
+            p = root;
+            while (p != NULL){
+                father = p;
+                if(val > p->value)
+                    p = p->right;
+                else
+                    p = p->left;
+            }
+            if(val>father->value) {
+                father->left = new Node<T>(val, father, RED);
+                balance_tree(father->left);
+            }
+            else {
+                father->right = new Node<T>(val, father, RED);
+                balance_tree(father->right);
+            }
+        }
+    };
+
+    void erase(T val) {
+    };
+
+    OwnIterator<T> find(T val) {
+    };
+
+    OwnIterator<T> begin() {
+    };
+
+    OwnIterator<T> end() {
+    };
+
+    int size() {
+    };
+
+    int empty() {
+    };
+};
+
+
 int main() {
+    int scale = 8;
+    int _SCL_VLE = 0;
+    asm ("add %1, %0"
+    : "=r" (scale)
+    : "r" (_SCL_VLE),
+    "0" (_SCL_VLE) );
+    std::cout<<scale;
     return 0;
 }
