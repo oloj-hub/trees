@@ -1,10 +1,12 @@
 #include <iostream>
 #include <iterator>
+
 //прошу не называйте переменные BLACK и RED
 enum colors {
     BLACK,
     RED
 };
+
 template<class T>
 class Node {
 public:
@@ -16,23 +18,29 @@ public:
     Node *father;
     colors color;
 
-    explicit Node(Node<T> *node = NULL) : father(node) {
+    explicit Node(Node<T> *node = NULL, colors col = BLACK) : father(node), color(col) {
         right = NULL;
         left = NULL;
     }
 
-    explicit Node(T val, Node<T> *node = NULL, colors col = BLACK) : father(node), value(val),color(col) {
+    explicit Node(T val, Node<T> *node = NULL, colors col = BLACK) : father(node), value(val), color(col) {
         right = NULL;
         left = NULL;
     }
-    Node* brother(){
-        if(this == father->left)
-            return father->right;
-        else
-            return father->left;
+
+    Node *brother() {
+        if (father != NULL) {
+            if (this == father->left)
+                return father->right;
+            else
+                return father->left;
+        } else return NULL;
     }
-    Node* uncle(){
-        return father->brother();
+
+    Node *uncle() {
+        if (father != NULL)
+            return father->brother();
+        else return NULL;
     }
 };
 
@@ -120,26 +128,75 @@ class RedBlackTree : public Tree<T> {
     using Tree<T>::root;
 private:
     int scale;
-    void balance_tree(Node<T>* node){
-        if(node->father == NULL)
+
+    void rotate_left(Node<T> *node) {
+        Node<T> *pivot = node->right;
+        pivot->father = node->father;
+        if (node->father != NULL) {
+            if (node->father->left == node)
+                node->father->left = pivot;
+            else {
+                node->father->right = pivot;
+            }
+        } else root = pivot;
+        node->right = pivot->left;
+        if (pivot->left != NULL)
+            pivot->left->father = node;
+        node->father = pivot;
+        pivot->left = node;
+        node = pivot;
+    }
+
+    void rotate_right(Node<T> *node) {
+        Node<T> *pivot = node->left;
+        pivot->father = node->father;
+        if (node->father != NULL) {
+            if (node->father->left == node)
+                node->father->left = pivot;
+            else
+                node->father->right = pivot;
+        } else root = pivot;
+        node->left = pivot->right;
+        if (pivot->right != NULL)
+            pivot->right->father = node;
+        node->father = pivot;
+        pivot->right = node;
+        node = pivot;
+    }
+
+    void balance_tree(Node<T> *node) {
+        if (node->father == NULL)
             node->color = BLACK;
-        else if(node->father.color == RED && node->uncle() != NULL){
-           if( node->uncle().color == BLACK){
-                node->father.color = BLACK;
-                node->uncle().color = BLACK;
-                node->father->father = RED;
+        else if (node->father->color == RED) {
+            if (node->uncle() != NULL && node->uncle()->color == RED) {
+                node->father->color = BLACK;
+                node->uncle()->color = BLACK;
+                node->father->father->color = RED;
                 balance_tree(node->father->father);
+            } else {
+                Node<T> *g = node->father->father;
+                if (g != NULL) {
+                    if (node->father == g->left) {
+                        if (node == node->father->right)
+                            rotate_left(node->father);
+                        node->father->color = BLACK;
+                        g->color = RED;
+                        rotate_right(g);
+                    } else if (node->father == g->right) {
+                        if (node == node->father->left)
+                            rotate_right(node->father);
+                        node->father->color = BLACK;
+                        g->color = RED;
+                        rotate_left(g);
+                    }
+                }
             }
         }
     }
+
 public:
     RedBlackTree() : Tree<T>() {
-        //roflan assembler insertion, don't fucking forget to fix it)
-        int _SCL_VLE = 0;
-        asm ("add %1, %0"
-        : "=r" (scale)
-        : "r" (_SCL_VLE),
-        "0" (_SCL_VLE) );
+        scale = 0;
     };
 
     RedBlackTree(T val) : Tree<T>(val) {
@@ -147,34 +204,41 @@ public:
     };
 
     void insert(T val) {
-        if (scale == 0)
+        if (scale == 0) {
             root->value = val;
-        else {
+        } else {
             Node<T> *p;
             Node<T> *father;
             p = root;
-            while (p != NULL){
+            while (p != NULL) {
                 father = p;
-                if(val > p->value)
+                if (val > p->value)
                     p = p->right;
                 else
                     p = p->left;
             }
-            if(val>father->value) {
+            if (val > father->value) {
+                father->right = new Node<T>(val, father, RED);
+                balance_tree(father->right);
+            } else {
                 father->left = new Node<T>(val, father, RED);
                 balance_tree(father->left);
             }
-            else {
-                father->right = new Node<T>(val, father, RED);
-                balance_tree(father->right);
-            }
         }
+        scale++;
     };
 
     void erase(T val) {
     };
 
     OwnIterator<T> find(T val) {
+        Node<T> *node = root;
+        while (node != NULL && node->value != val) {
+            if (val < node->value)
+                node = node->left;
+            else node = node->right;
+        }
+        return OwnIterator<T>(node);
     };
 
     OwnIterator<T> begin() {
@@ -192,12 +256,15 @@ public:
 
 
 int main() {
-    int scale = 8;
-    int _SCL_VLE = 0;
-    asm ("add %1, %0"
-    : "=r" (scale)
-    : "r" (_SCL_VLE),
-    "0" (_SCL_VLE) );
-    std::cout<<scale;
+    RedBlackTree<int> t;
+    for (int i = 0; i < 100; i++) {
+        t.insert(rand() % 477);
+    }
+    for (int i = 0; i < 477; i++) {
+        if (t.find(i)!=NULL) {
+            std::cout << *t.find(i) << '\n';
+        }
+    }
     return 0;
 }
+
