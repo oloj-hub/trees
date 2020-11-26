@@ -1,5 +1,7 @@
 #include <iostream>
 #include <iterator>
+#include <set>
+
 
 //прошу не называйте переменные BLACK и RED
 enum colors {
@@ -72,9 +74,39 @@ public:
         return node->value;
     };
 
-    //вот здесь все пизда не просто нужно будет реализовывать чтобы он шел по дереву
-    OwnIterator &operator++();
+    OwnIterator operator++() {
+        if (node != NULL) {
+            if (node->right != NULL) {
+                node = node->right;
+                while (node->left != NULL) {
+                    node = node->left;
+                }
+            } else {
+                while (node->father != NULL && node != node->father->left) {
+                    node = node->father;
+                }
+                node = node->father;
+            }
+        };
+        return *this;
+    };
 
+    OwnIterator operator++(int) {
+        if (node != NULL) {
+            if (node->right != NULL) {
+                node = node->right;
+                while (node->left != NULL) {
+                    node = node->left;
+                }
+            } else {
+                while (node->father != NULL && node != node->father->left) {
+                    node = node->father;
+                }
+                node = node->father;
+            }
+        };
+        return *this;
+    }
 };
 
 template<class T>
@@ -119,7 +151,7 @@ public:
 
     virtual int size() = 0;
 
-    virtual int empty() = 0;
+    virtual bool empty() = 0;
 };
 
 
@@ -358,8 +390,8 @@ public:
         } else return;
     }
 
-    OwnIterator<T> find(T val) override{
-        if (scale != NULL) {
+    OwnIterator<T> find(T val) override {
+        if (scale != 0) {
             Node<T> *node = root;
             while (node != NULL && node->value != val) {
                 if (val < node->value)
@@ -367,28 +399,44 @@ public:
                 else
                     node = node->right;
             }
-            return
-                    OwnIterator<T>(node);
+            return OwnIterator<T>(node);
         } else return NULL;
 // по хорошему нужно конечно не NULL возвращать, а
 // специальный итератор tree.end()
     };
 
-    OwnIterator<T> begin() {
+    OwnIterator<T> begin() override {
+        if (scale != 0) {
+            Node<T> *node = root;
+            while (node->left != NULL) {
+                node = node->left;
+            }
+            return OwnIterator<T>(node);
+        } else return NULL;
     };
 
-    OwnIterator<T> end() {
+    OwnIterator<T> end() override {
+        if (scale != 0) {
+            Node<T> *node = root;
+            while (node->right != NULL) {
+                node = node->right;
+            }
+            return OwnIterator<T>(node);
+        } else return NULL;
     };
 
-    int size() {
+    int size() override {
+        return scale;
     };
 
-    int empty() {
+    bool empty() override {
+        return scale == 0;
     };
 };
 
-
 int main() {
+
     return 0;
 }
+
 
