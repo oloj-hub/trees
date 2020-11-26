@@ -129,6 +129,43 @@ class RedBlackTree : public Tree<T> {
 private:
     int scale;
 
+    void *delete_node(Node<T> *node) {
+        if (node->right == NULL && node->left == NULL) {
+            if (node->color == BLACK) {
+                fix_deleting(node);
+            }
+            if (node->father != NULL) {
+                if (node == node->father->right)
+                    node->father->right = NULL;
+                else node->father->left = NULL;
+                delete node;
+            }
+        } else if (node->right == NULL || node->left == NULL) {
+            Node<T> *son;
+            colors col = node->color;
+            if (node->right != NULL && node->left == NULL)
+                son = node->right;
+            else son = node->left;
+            son->father = node->father;
+            if (node->father != NULL) {
+                if (node == node->father->left)
+                    node->father->left = son;
+                else node->father->right = son;
+            } else root = son;
+            delete node;
+            if (son->color == BLACK && col == BLACK)
+                fix_deleting(son);
+            else son->color = BLACK;
+        } else {
+            Node<T> *next = node->right;
+            while (next->left != NULL) {
+                next = next->left;
+            }
+            node->value = next->value;
+            delete_node(next);
+        }
+    }
+
     void rotate_left(Node<T> *node) {
         Node<T> *pivot = node->right;
         pivot->father = node->father;
@@ -165,36 +202,105 @@ private:
     }
 
     void balance_tree(Node<T> *node) {
-        if (node->father == NULL)
+        if (node->father == NULL) {
             node->color = BLACK;
-        else if (node->father->color == RED) {
-            if (node->uncle() != NULL && node->uncle()->color == RED) {
-                node->father->color = BLACK;
-                node->uncle()->color = BLACK;
-                node->father->father->color = RED;
-                balance_tree(node->father->father);
-            } else {
-                Node<T> *g = node->father->father;
-                if (g != NULL) {
-                    if (node->father == g->left) {
-                        if (node == node->father->right)
-                            rotate_left(node->father);
-                        node->father->color = BLACK;
-                        g->color = RED;
-                        rotate_right(g);
-                    } else if (node->father == g->right) {
-                        if (node == node->father->left)
-                            rotate_right(node->father);
-                        node->father->color = BLACK;
-                        g->color = RED;
-                        rotate_left(g);
+            return;
+        }
+        while (node->father != NULL && node->father->color == RED) {
+            if (node->father == node->father->father->left) {
+                if (node->uncle() != NULL && node->uncle()->color == RED) {
+                    node->father->color = BLACK;
+                    node->uncle()->color = BLACK;
+                    node->father->father->color = RED;
+                    node = node->father->father;
+                } else {
+                    if (node == node->father->right) {
+                        node = node->father;
+                        rotate_left(node);
                     }
+                    node->father->color = BLACK;
+                    node->father->father->color = RED;
+                    rotate_right(node->father->father);
+                }
+            } else {
+                if (node->uncle() != NULL && node->uncle()->color == RED) {
+                    node->father->color = BLACK;
+                    node->uncle()->color = BLACK;
+                    node->father->father->color = RED;
+                    node = node->father->father;
+                } else {
+                    if (node == node->father->left) {
+                        node = node->father;
+                        rotate_right(node);
+                    }
+                    node->father->color = BLACK;
+                    node->father->father->color = RED;
+                    rotate_left(node->father->father);
                 }
             }
+        }
+        root->color = BLACK;
+    }
+
+    bool black_or_null(Node<T> *node) {
+        if (node == NULL || node->color == BLACK)
+            return true;
+        else return false;
+    }
+
+    void fix_deleting(Node<T> *node) {
+        if (node->father != NULL) {
+            if (node == node->father->left) {
+                if (node->brother()->color == RED) {
+                    node->brother()->color = BLACK;
+                    node->father->color = RED;
+                    rotate_left(node->father);
+                }
+                if (black_or_null(node->brother()->left) && black_or_null(node->brother()->right)) {
+                    node->brother()->color = RED;
+                    if (node->father->color == BLACK)
+                        fix_deleting(node->father);
+                    else node->father->color = BLACK;
+                } else {
+                    if (black_or_null(node->brother()->right)) {
+                        node->brother()->left->color = BLACK;
+                        node->brother()->color = RED;
+                        rotate_right(node->brother());
+                    }
+                    node->brother()->color = node->father->color;
+                    node->father->color = BLACK;
+                    node->brother()->right->color = BLACK;
+                    rotate_left(node->father);
+                }
+            } else {
+                if (node->brother()->color == RED) {
+                    node->brother()->color = BLACK;
+                    node->father->color = RED;
+                    rotate_right(node->father);
+                }
+                if (black_or_null(node->brother()->left) && black_or_null(node->brother()->right)) {
+                    node->brother()->color = RED;
+                    if (node->father->color == BLACK)
+                        fix_deleting(node->father);
+                    else node->father->color = BLACK;
+                } else {
+                    if (black_or_null(node->brother()->left)) {
+                        node->brother()->right->color = BLACK;
+                        node->brother()->color = RED;
+                        rotate_left(node->brother());
+                    }
+                    node->brother()->color = node->father->color;
+                    node->father->color = BLACK;
+                    node->brother()->left->color = BLACK;
+                    rotate_right(node->father);
+                }
+            }
+
         }
     }
 
 public:
+
     RedBlackTree() : Tree<T>() {
         scale = 0;
     };
@@ -203,42 +309,69 @@ public:
         scale = 1;
     };
 
-    void insert(T val) {
+    void insert(T val) override {
         if (scale == 0) {
-            root->value = val;
+            root->
+                    value = val;
         } else {
             Node<T> *p;
             Node<T> *father;
             p = root;
-            while (p != NULL) {
+            while (p != NULL && p->value != val) {
                 father = p;
                 if (val > p->value)
                     p = p->right;
                 else
                     p = p->left;
             }
+            if (p != NULL)
+                return;
             if (val > father->value) {
-                father->right = new Node<T>(val, father, RED);
-                balance_tree(father->right);
+                father->
+                        right = new Node<T>(val, father, RED);
+                balance_tree(father
+                                     ->right);
             } else {
-                father->left = new Node<T>(val, father, RED);
-                balance_tree(father->left);
+                father->
+                        left = new Node<T>(val, father, RED);
+                balance_tree(father
+                                     ->left);
             }
         }
         scale++;
     };
 
-    void erase(T val) {
-    };
+    void erase(T val) override {
+        if (scale != 0) {
+            Node<T> *node;
+            node = root;
+            while (node != NULL && node->value != val) {
+                if (val > node->value)
+                    node = node->right;
+                else
+                    node = node->left;
+            }
+            if (node != NULL) {
+                delete_node(node);
+                scale--;
+            }
+        } else return;
+    }
 
-    OwnIterator<T> find(T val) {
-        Node<T> *node = root;
-        while (node != NULL && node->value != val) {
-            if (val < node->value)
-                node = node->left;
-            else node = node->right;
-        }
-        return OwnIterator<T>(node);
+    OwnIterator<T> find(T val) override{
+        if (scale != NULL) {
+            Node<T> *node = root;
+            while (node != NULL && node->value != val) {
+                if (val < node->value)
+                    node = node->left;
+                else
+                    node = node->right;
+            }
+            return
+                    OwnIterator<T>(node);
+        } else return NULL;
+// по хорошему нужно конечно не NULL возвращать, а
+// специальный итератор tree.end()
     };
 
     OwnIterator<T> begin() {
@@ -256,15 +389,6 @@ public:
 
 
 int main() {
-    RedBlackTree<int> t;
-    for (int i = 0; i < 100; i++) {
-        t.insert(rand() % 477);
-    }
-    for (int i = 0; i < 477; i++) {
-        if (t.find(i)!=NULL) {
-            std::cout << *t.find(i) << '\n';
-        }
-    }
     return 0;
 }
 
