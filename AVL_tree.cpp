@@ -111,7 +111,7 @@ public:
     //в с++ можно красиво передовать переменные из нового конструктора
     // в конструктор наследуемого класса, потом чекни как
     Tree() {
-        root = std::make_shared<Node<T>>(nullptr);
+        root = nullptr;
     }
 
     Tree(T val) {
@@ -366,13 +366,13 @@ int AVL_tree<T>::size() {
 
 int main() {
 	using namespace std;
-	AVL_tree<int> k(6);
+	AVL_tree<int> k;
 	std::cout << k.size() << std::endl;
 	k.insert(5);
 	std::cout << k.size() << std::endl;
-	k.erase(6);
+	k.insert(6);
 	std::cout << k.size() << std::endl;
-	std::cout << *(k.find(5)) << std::endl;
+	std::cout << *(k.find(6)) << std::endl;
 	for (int i = 0; i < 80; i++) {
 		i++;
 	}
