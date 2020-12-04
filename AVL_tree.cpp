@@ -2,143 +2,11 @@
 #include <iterator>
 #include <memory>
 
+#include "node.h"
 
-template<class T>
-class Node {
-public:
-    //вообще возможно лучше засунуть все это в private, и во всех дальнейших классах прописать
-    // что node дружественный, над этим еще подумаем
-    	typedef std::shared_ptr<Node<T>> node_ptr_c;
-	T key;
-	unsigned int height;
-	node_ptr_c right;
-    	node_ptr_c left;
-   	std::weak_ptr<Node<T>> father;
+#include "tree_iterator.h"
 
-    explicit Node(node_ptr_c p) : father(p) {
-        right = nullptr;
-        height = 1;
-	left = nullptr;
-    }
-
-    explicit Node(T& val, node_ptr_c node) : father(node), key{val} {
-        right = nullptr;
-        left = nullptr;
-    }
-    Node* brother(){
-        if(this == father->left)
-            return father->right;
-        else
-            return father->left;
-    }
-    Node* uncle(){
-        return father->brother();
-    }
-};
-
-template<class T>
-//хуй знает как работают кастомные итераторы, я что-то почитал,
-// но пока неоч разобрался https://habr.com/ru/post/265491/
-class OwnIterator : std::iterator<std::input_iterator_tag, T> {
-private:
-    //можно конечно просто указатель на переменную хранить,
-    // но мне кажется так будет лучше
-    std::shared_ptr<Node<T>> node;
-
-public:
-
-   typedef std::shared_ptr<Node<T>> node_ptr_c;
-   
-   OwnIterator(node_ptr_c p) {
-        node = p;
-    };
-
-    OwnIterator(const OwnIterator &it) : node(it.node) {
-    };
-
-    bool operator!=(OwnIterator const &other) {
-        return node != other.node;
-    };
-
-    bool operator==(OwnIterator const &other) {
-        return node == other.node;
-    };
-
-    typename OwnIterator::reference operator*() {
-        return node->key;
-    };
-
-    OwnIterator operator++() {
-        if (node != nullptr) {
-            if (node->right != nullptr) {
-                node = node->right;
-                while (node->left != nullptr) {
-                    node = node->left;
-                }
-            } else {
-                while (node->father != nullptr && node != node->father.lock()->left) {
-                    node = node->father.lock();
-                }
-                node = node->father.lock();
-            }
-        };
-        return *this;
-    };
-
-    OwnIterator operator++(int) {
-        if (node != nullptr) {
-            if (node->right != nullptr) {
-                node = node->right;
-                while (node->left != nullptr) {
-                    node = node->left;
-                }
-            } else {
-                while (node->father != nullptr && node != node->father.lock()->left) {
-                    node = node->father.lock();
-                }
-                node = node->father.lock();
-            }
-        };
-        return *this;
-    }
-};
-
-template<class T>
-class Tree {
-protected:
-	std::shared_ptr<Node<T>> root;
-public:
-    //в с++ можно красиво передовать переменные из нового конструктора
-    // в конструктор наследуемого класса, потом чекни как
-    Tree() {
-        root = nullptr;
-    }
-
-    Tree(T val) {
-        root = std::make_shared<Node<T>>(val, nullptr);
-    }
-
-    ~Tree() {
-    	root = nullptr;
-    }
-
-    // это нужно будет наследовать и реализовать в порядке убывания приоретета(по моему личному мнению)
-    virtual void insert(T key) = 0;
-
-    virtual void erase(T key) = 0;
-
-    virtual OwnIterator<T> find(T key) = 0;
-
-    virtual OwnIterator<T> begin() = 0;
-
-    virtual OwnIterator<T> end() = 0;
-
-    virtual int size() = 0;
-
-    virtual bool empty() = 0;
-};
-
-
+#include "abstract_tree.h"
 
 
 
@@ -370,9 +238,9 @@ int main() {
 	std::cout << k.size() << std::endl;
 	k.insert(5);
 	std::cout << k.size() << std::endl;
-	k.insert(6);
+	k.insert(5);
 	std::cout << k.size() << std::endl;
-	std::cout << *(k.find(6)) << std::endl;
+	std::cout << *(k.find(5)) << std::endl;
 	for (int i = 0; i < 80; i++) {
 		i++;
 	}
