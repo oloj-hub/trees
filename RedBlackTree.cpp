@@ -19,7 +19,7 @@ public:
 private:
     int scale;
 
-    void  delete_node(node_ptr_c node) {
+    void delete_node(node_ptr_c node) {
         if (node->right == nullptr && node->left == nullptr) {
             if (node->color == BLACK) {
                 fix_deleting(node);
@@ -36,7 +36,7 @@ private:
             if (node->right != nullptr && node->left == nullptr)
                 son = node->right;
             else son = node->left;
-            son->father.lock() = node->father.lock();
+            son->father = node->father;
             if (node->father.lock() != nullptr) {
                 if (node == node->father.lock()->left)
                     node->father.lock()->left = son;
@@ -58,7 +58,7 @@ private:
 
     void rotate_left(node_ptr_c node) {
         node_ptr_c pivot = node->right;
-        pivot->father.lock() = node->father.lock();
+        pivot->father = node->father;
         if (node->father.lock() != nullptr) {
             if (node->father.lock()->left == node)
                 node->father.lock()->left = pivot;
@@ -68,15 +68,15 @@ private:
         } else root = pivot;
         node->right = pivot->left;
         if (pivot->left != nullptr)
-            pivot->left->father.lock() = node;
-        node->father.lock() = pivot;
+            pivot->left->father = node;
+        node->father = pivot;
         pivot->left = node;
         node = pivot;
     }
 
     void rotate_right(node_ptr_c node) {
         node_ptr_c pivot = node->left;
-        pivot->father.lock() = node->father.lock();
+        pivot->father = node->father;
         if (node->father.lock() != nullptr) {
             if (node->father.lock()->left == node)
                 node->father.lock()->left = pivot;
@@ -85,8 +85,8 @@ private:
         } else root = pivot;
         node->left = pivot->right;
         if (pivot->right != nullptr)
-            pivot->right->father.lock() = node;
-        node->father.lock() = pivot;
+            pivot->right->father = node;
+        node->father = pivot;
         pivot->right = node;
         node = pivot;
     }
@@ -216,15 +216,11 @@ public:
             if (p != nullptr)
                 return;
             if (val > father->key) {
-                father->
-                        right = std::make_shared<Node<T>>(val, father, RED);
-                balance_tree(father
-                                     ->right);
+                father->right = std::make_shared<Node<T>>(val, father, RED);
+                balance_tree(father->right);
             } else {
-                father->
-                        left = std::make_shared<Node<T>>(val, father, RED);
-                balance_tree(father
-                                     ->left);
+                father->left = std::make_shared<Node<T>>(val, father, RED);
+                balance_tree(father->left);
             }
         }
         scale++;
@@ -293,17 +289,17 @@ public:
 
 int main() {
 
-	using namespace std;
-    RedBlackTree<int> k;
-    k.insert(5);
-    cout << k.size() << endl;
-    k.erase(5);
-    for (int i = 0; i < 80; i ++) {
-	k.insert(i);
+    using namespace std;
+    RedBlackTree<int> t;
+    for (int i = 0; i < 100000; i++) {
+        t.insert(rand() % 100000);
     }
-    k.insert(13);
-    cout << k.size() << endl;
+    for (int i = 0; i < 100000; i++) {
+        t.erase(rand() % 100000);
+    }
+    cout << t.size();
     return 0;
 }
+
 
 
